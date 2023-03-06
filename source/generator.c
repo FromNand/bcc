@@ -2,6 +2,7 @@
 #include <common.h>
 
 void Generator(Node *node){
+    int i = 0;
     switch(node->type){
         case NUMBER_NODE:
             printf("    mov     rax, %d\n", node->token->value);
@@ -14,7 +15,9 @@ void Generator(Node *node){
             printf(".intel_syntax noprefix\n");
             printf(".global main\n\n");
             printf("main:\n");
-            Generator(node->child1);
+            while(node->childs[i]){
+                Generator(node->childs[i++]);
+            }
             printf("    ret\n");
             return;
         default:

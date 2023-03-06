@@ -4,6 +4,7 @@
 
 Node* Expression(void);
 
+#define CHILDS_MAX 10
 static Token *previous, *current;
 
 void UpdateToken(void){
@@ -40,6 +41,7 @@ Node* NewNode(NodeType type){
     new->token = previous;
     new->child1 = NULL;
     new->child2 = NULL;
+    new->childs = NULL;
     return new;
 }
 
@@ -157,10 +159,24 @@ Node* Expression(void){
     return Equality();
 }
 
+Node* Statement(void){
+    Node *node = Expression();
+    ExpectKeyword(";");
+    return node;
+}
+
 Node* Parser(Token *token){
+    int i = 0;
     Node *node;
     current = token;
     node = NewNode(PROGRAM_NODE);
-    node->child1 = Expression();
+    node->childs = malloc(sizeof(Node*) * CHILDS_MAX);
+    while(!ConsumeToken(TAIL_TOKEN)){
+        if(i >= CHILDS_MAX - 1){
+            SyntaxError(current->string, "At most %d statements are allowed.", CHILDS_MAX - 1);
+        }
+        node->childs[i++] = Statement();
+    }
+    node->childs[i] = NULL;
     return node;
 }

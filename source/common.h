@@ -29,4 +29,5 @@ typedef struct Node {
     Token *token;
     struct Node *child1;
     struct Node *child2;
+    struct Node **childs;
 } Node;
