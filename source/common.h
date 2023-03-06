@@ -16,6 +16,7 @@ typedef struct Token {
 
 typedef enum {
     NUMBER_NODE,
+    NEGATION_NODE,
     MULTIPLICATION_NODE, DIVISION_NODE,
     ADDITION_NODE, SUBTRACTION_NODE,
     PROGRAM_NODE

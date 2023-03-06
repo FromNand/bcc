@@ -4,21 +4,24 @@
 void Generator(Node *node){
     switch(node->type){
         case NUMBER_NODE:
-            printf("    push    %d\n", node->token->value);
+            printf("    mov     rax, %d\n", node->token->value);
+            return;
+        case NEGATION_NODE:
+            Generator(node->child1);
+            printf("    neg     rax\n");
             return;
         case PROGRAM_NODE:
             printf(".intel_syntax noprefix\n");
             printf(".global main\n\n");
             printf("main:\n");
             Generator(node->child1);
-            printf("    pop     rax\n");
             printf("    ret\n");
             return;
         default:
-            Generator(node->child1);
             Generator(node->child2);
+            printf("    push    rax\n");
+            Generator(node->child1);
             printf("    pop     rdi\n");
-            printf("    pop     rax\n");
     }
     switch(node->type){
         case MULTIPLICATION_NODE:
@@ -37,5 +40,4 @@ void Generator(Node *node){
         default:
             SyntaxError(node->token->string, "Invalid node.");
     }
-    printf("    push    rax\n");
 }

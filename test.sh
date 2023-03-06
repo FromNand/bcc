@@ -14,4 +14,7 @@ assert 3 "1+2*3-4"
 assert 8 " 5 + 7 / 2 "
 assert 15 "5*(9-6)"
 assert 4 "(3+6)/2"
+assert 10 "-10+20"
+assert 10 "- -10"
+assert 10 "- - +10"
 rm -f temporary.s temporary

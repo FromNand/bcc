@@ -62,16 +62,31 @@ Node* Primary(void){
     return node;
 }
 
+Node* Unary(void){
+    Node *node;
+    if(ConsumeKeyword("+")){
+        node = Unary();
+    }
+    else if(ConsumeKeyword("-")){
+        node = NewNode(NEGATION_NODE);
+        node->child1 = Unary();
+    }
+    else {
+        node = Primary();
+    }
+    return node;
+}
+
 Node* Multiplication(void){
-    Node *node = Primary(), *new;
+    Node *node = Unary(), *new;
     while(1){
         if(ConsumeKeyword("*")){
             new = NewNode(MULTIPLICATION_NODE);
-            node = BinaryNode(new, node, Primary());
+            node = BinaryNode(new, node, Unary());
         }
         else if(ConsumeKeyword("/")){
             new = NewNode(DIVISION_NODE);
-            node = BinaryNode(new, node, Primary());
+            node = BinaryNode(new, node, Unary());
         }
         else {
             return node;
