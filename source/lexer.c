@@ -22,7 +22,7 @@ Token* Lexer(char *source){
         if(*source == '\t' || *source == '\n' || *source == '\r' || *source == ' '){
             source += 1;
         }
-        else if(strchr("+-*/", *source)){
+        else if(strchr("+-*/()", *source)){
             NewToken(KEYWORD_TOKEN, source, 1);
             source += 1;
         }

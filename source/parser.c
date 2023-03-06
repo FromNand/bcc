@@ -2,6 +2,8 @@
 #include <string.h>
 #include <common.h>
 
+Node* Expression(void);
+
 static Token *previous, *current;
 
 void UpdateToken(void){
@@ -9,12 +11,12 @@ void UpdateToken(void){
     current = current->next;
 }
 
-void ExpectToken(TokenType type){
-    static char *tokenTypes[] = {"KEYWORD_TOKEN", "NUMBER_TOKEN", "TAIL_TOKEN"};
+int ConsumeToken(TokenType type){
     if(current->type != type){
-        SyntaxError(current->string, "%s expected.", tokenTypes[type]);
+        return 0;
     }
     UpdateToken();
+    return 1;
 }
 
 int ConsumeKeyword(char *keyword){
@@ -23,6 +25,13 @@ int ConsumeKeyword(char *keyword){
     }
     UpdateToken();
     return 1;
+}
+
+void ExpectKeyword(char *keyword){
+    if(current->type != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
+        SyntaxError(current->string, "\"%s\" expected.", keyword);
+    }
+    UpdateToken();
 }
 
 Node* NewNode(NodeType type){
@@ -41,8 +50,16 @@ Node* BinaryNode(Node *node, Node *child1, Node *child2){
 }
 
 Node* Primary(void){
-    ExpectToken(NUMBER_TOKEN);
-    return NewNode(NUMBER_NODE);
+    Node *node;
+    if(ConsumeToken(NUMBER_TOKEN)){
+        node = NewNode(NUMBER_NODE);
+    }
+    else {
+        ExpectKeyword("(");
+        node = Expression();
+        ExpectKeyword(")");
+    }
+    return node;
 }
 
 Node* Multiplication(void){
