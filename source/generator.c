@@ -11,6 +11,8 @@ void Generator(Node *node){
             Generator(node->child1);
             printf("    neg     rax\n");
             return;
+        case NULL_NODE:
+            return;
         case PROGRAM_NODE:
             printf(".intel_syntax noprefix\n");
             printf(".global main\n\n");

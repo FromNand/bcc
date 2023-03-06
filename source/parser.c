@@ -160,8 +160,14 @@ Node* Expression(void){
 }
 
 Node* Statement(void){
-    Node *node = Expression();
-    ExpectKeyword(";");
+    Node *node;
+    if(ConsumeKeyword(";")){
+        node = NewNode(NULL_NODE);
+    }
+    else {
+        node = Expression();
+        ExpectKeyword(";");
+    }
     return node;
 }
 
