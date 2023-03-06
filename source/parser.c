@@ -160,9 +160,21 @@ Node* Expression(void){
 }
 
 Node* Statement(void){
+    int i = 0;
     Node *node;
     if(ConsumeKeyword(";")){
         node = NewNode(NULL_NODE);
+    }
+    else if(ConsumeKeyword("{")){
+        node = NewNode(BLOCK_NODE);
+        node->childs = malloc(sizeof(Node*) * CHILDS_MAX);
+        while(!ConsumeKeyword("}")){
+            if(i >= CHILDS_MAX - 1){
+                SyntaxError(current->string, "At most %d statements are allowed in block statement.", CHILDS_MAX - 1);
+            }
+            node->childs[i++] = Statement();
+        }
+        node->childs[i] = NULL;
     }
     else {
         node = Expression();
@@ -172,17 +184,9 @@ Node* Statement(void){
 }
 
 Node* Parser(Token *token){
-    int i = 0;
     Node *node;
     current = token;
     node = NewNode(PROGRAM_NODE);
-    node->childs = malloc(sizeof(Node*) * CHILDS_MAX);
-    while(!ConsumeToken(TAIL_TOKEN)){
-        if(i >= CHILDS_MAX - 1){
-            SyntaxError(current->string, "At most %d statements are allowed.", CHILDS_MAX - 1);
-        }
-        node->childs[i++] = Statement();
-    }
-    node->childs[i] = NULL;
+    node->child1 = Statement();
     return node;
 }

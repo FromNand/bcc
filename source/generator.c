@@ -13,13 +13,16 @@ void Generator(Node *node){
             return;
         case NULL_NODE:
             return;
+        case BLOCK_NODE:
+            while(node->childs[i]){
+                Generator(node->childs[i++]);
+            }
+            return;
         case PROGRAM_NODE:
             printf(".intel_syntax noprefix\n");
             printf(".global main\n\n");
             printf("main:\n");
-            while(node->childs[i]){
-                Generator(node->childs[i++]);
-            }
+            Generator(node->child1);
             printf("    ret\n");
             return;
         default:

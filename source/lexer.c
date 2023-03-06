@@ -30,7 +30,7 @@ Token* Lexer(char *source){
             NewToken(KEYWORD_TOKEN, source, 2);
             source += 2;
         }
-        else if(strchr("+-*/()<>;", *source)){
+        else if(strchr("+-*/(){}<>;", *source)){
             NewToken(KEYWORD_TOKEN, source, 1);
             source += 1;
         }
