@@ -4,6 +4,10 @@
 
 static Token *current;
 
+int StartWith(char *source, char *keyword){
+    return !memcmp(source, keyword, strlen(keyword));
+}
+
 void NewToken(TokenType type, char *string, int length){
     Token *new = malloc(sizeof(Token));
     new->type = type;
@@ -22,7 +26,11 @@ Token* Lexer(char *source){
         if(*source == '\t' || *source == '\n' || *source == '\r' || *source == ' '){
             source += 1;
         }
-        else if(strchr("+-*/()", *source)){
+        else if(StartWith(source, "==") || StartWith(source, "!=") || StartWith(source, "<=") || StartWith(source, ">=")){
+            NewToken(KEYWORD_TOKEN, source, 2);
+            source += 2;
+        }
+        else if(strchr("+-*/()<>", *source)){
             NewToken(KEYWORD_TOKEN, source, 1);
             source += 1;
         }

@@ -111,8 +111,50 @@ Node* Addition(void){
     }
 }
 
+Node* Relational(void){
+    Node *node = Addition(), *new;
+    while(1){
+        if(ConsumeKeyword("<")){
+            new = NewNode(LESS_NODE);
+            node = BinaryNode(new, node, Addition());
+        }
+        else if(ConsumeKeyword("<=")){
+            new = NewNode(LESS_EQUAL_NODE);
+            node = BinaryNode(new, node, Addition());
+        }
+        else if(ConsumeKeyword(">")){
+            new = NewNode(LESS_NODE);
+            node = BinaryNode(new, Addition(), node);
+        }
+        else if(ConsumeKeyword(">=")){
+            new = NewNode(LESS_EQUAL_NODE);
+            node = BinaryNode(new, Addition(), node);
+        }
+        else {
+            return node;
+        }
+    }
+}
+
+Node* Equality(void){
+    Node *node = Relational(), *new;
+    while(1){
+        if(ConsumeKeyword("==")){
+            new = NewNode(EQUALITY_NODE);
+            node = BinaryNode(new, node, Relational());
+        }
+        else if(ConsumeKeyword("!=")){
+            new = NewNode(INEQUALITY_NODE);
+            node = BinaryNode(new, node, Relational());
+        }
+        else {
+            return node;
+        }
+    }
+}
+
 Node* Expression(void){
-    return Addition();
+    return Equality();
 }
 
 Node* Parser(Token *token){
