@@ -51,6 +51,7 @@ static Node* NewNode(NodeType type){
     new->number1 = 0;
     new->child1 = NULL;
     new->child2 = NULL;
+    new->child3 = NULL;
     new->childs = NULL;
     return new;
 }
@@ -216,6 +217,16 @@ static Node* Statement(void){
             node->childs[i++] = Statement();
         }
         node->childs[i] = NULL;
+    }
+    else if(ConsumeKeyword("if")){
+        node = NewNode(IF_NODE);
+        ExpectKeyword("(");
+        node->child1 = Expression();
+        ExpectKeyword(")");
+        node->child2 = Statement();
+        if(ConsumeKeyword("else")){
+            node->child3 = Statement();
+        }
     }
     else if(ConsumeKeyword("return")){
         node = NewNode(RETURN_NODE);

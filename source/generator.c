@@ -15,7 +15,8 @@ static void GenerateLeftValue(Node *node){
 }
 
 void Generator(Node *node){
-    int i = 0;
+    static int counter;
+    int i = 0, id = counter++;
     switch(node->type){
         case NUMBER_NODE:
             printf("    mov     rax, %d\n", node->token->value);
@@ -40,6 +41,18 @@ void Generator(Node *node){
             while(node->childs[i]){
                 Generator(node->childs[i++]);
             }
+            return;
+        case IF_NODE:
+            Generator(node->child1);
+            printf("    cmp     rax, 0\n");
+            printf("    je      .LElse%d\n", id);
+            Generator(node->child2);
+            printf("    jmp     .LEnd%d\n", id);
+            printf(".LElse%d:\n", id);
+            if(node->child3){
+                Generator(node->child3);
+            }
+            printf(".LEnd%d:\n", id);
             return;
         case RETURN_NODE:
             Generator(node->child1);
