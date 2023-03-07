@@ -217,6 +217,11 @@ static Node* Statement(void){
         }
         node->childs[i] = NULL;
     }
+    else if(ConsumeKeyword("return")){
+        node = NewNode(RETURN_NODE);
+        node->child1 = Expression();
+        ExpectKeyword(";");
+    }
     else {
         node = Expression();
         ExpectKeyword(";");

@@ -23,10 +23,19 @@ static void NewToken(TokenType type, char *string, int length){
 
 Token* Lexer(char *source){
     char *base;
-    int i;
+    static char *keywords[] = {"return"};
+    int i, j;
     Token head;
     current = &head;
     while(*source){
+        for(i = 0; i < sizeof(keywords) / sizeof(char*); i++){
+            j = strlen(keywords[i]);
+            if(StartWith(source, keywords[i]) && !IsIdentifierCharacter(source[j])){
+                NewToken(KEYWORD_TOKEN, source, j);
+                source += j;
+                break;
+            }
+        }
         if(*source == '\t' || *source == '\n' || *source == '\r' || *source == ' '){
             source += 1;
         }

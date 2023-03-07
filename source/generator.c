@@ -41,6 +41,12 @@ void Generator(Node *node){
                 Generator(node->childs[i++]);
             }
             return;
+        case RETURN_NODE:
+            Generator(node->child1);
+            printf("    mov     rsp, rbp\n");
+            printf("    pop     rbp\n");
+            printf("    ret\n");
+            return;
         case PROGRAM_NODE:
             localVariableCounter = node->number1;
             printf(".intel_syntax noprefix\n");
