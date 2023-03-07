@@ -3,7 +3,7 @@ void RuntimeErrorInternal(char *file, int line, char *format, ...);
 void SyntaxError(char *location, char *format, ...);
 
 typedef enum {
-    KEYWORD_TOKEN, NUMBER_TOKEN, TAIL_TOKEN
+    KEYWORD_TOKEN, NUMBER_TOKEN, IDENTIFIER_TOKEN, TAIL_TOKEN
 } TokenType;
 
 typedef struct Token {
@@ -15,12 +15,13 @@ typedef struct Token {
 } Token;
 
 typedef enum {
-    NUMBER_NODE,
+    NUMBER_NODE, LOCAL_VARIABLE_NODE,
     NEGATION_NODE,
     MULTIPLICATION_NODE, DIVISION_NODE,
     ADDITION_NODE, SUBTRACTION_NODE,
     LESS_NODE, LESS_EQUAL_NODE,
     EQUALITY_NODE, INEQUALITY_NODE,
+    ASSIGNMENT_NODE,
     NULL_NODE, BLOCK_NODE,
     PROGRAM_NODE
 } NodeType;
@@ -28,6 +29,7 @@ typedef enum {
 typedef struct Node {
     NodeType type;
     Token *token;
+    int number1;
     struct Node *child1;
     struct Node *child2;
     struct Node **childs;

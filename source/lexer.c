@@ -4,11 +4,15 @@
 
 static Token *current;
 
-int StartWith(char *source, char *keyword){
+static int StartWith(char *source, char *keyword){
     return !memcmp(source, keyword, strlen(keyword));
 }
 
-void NewToken(TokenType type, char *string, int length){
+static int IsIdentifierCharacter(char character){
+    return ('0' <= character && character <= '9') || ('A' <= character && character <= 'Z') || ('a' <= character && character <= 'z') || character == '_';
+}
+
+static void NewToken(TokenType type, char *string, int length){
     Token *new = malloc(sizeof(Token));
     new->type = type;
     new->string = string;
@@ -30,7 +34,7 @@ Token* Lexer(char *source){
             NewToken(KEYWORD_TOKEN, source, 2);
             source += 2;
         }
-        else if(strchr("+-*/(){}<>;", *source)){
+        else if(strchr("+-*/=(){}<>;", *source)){
             NewToken(KEYWORD_TOKEN, source, 1);
             source += 1;
         }
@@ -39,6 +43,10 @@ Token* Lexer(char *source){
             i = strtol(source, &source, 10);
             NewToken(NUMBER_TOKEN, base, source - base);
             current->value = i;
+        }
+        else if(IsIdentifierCharacter(*source)){
+            for(base = source++; IsIdentifierCharacter(*source); source++);
+            NewToken(IDENTIFIER_TOKEN, base, source - base);
         }
         else {
             SyntaxError(source, "Invalid token.");

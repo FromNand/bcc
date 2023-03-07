@@ -2,17 +2,26 @@
 #include <string.h>
 #include <common.h>
 
-Node* Expression(void);
+static Node* Expression(void);
 
-#define CHILDS_MAX 10
+typedef struct LocalVariable {
+    char *string;
+    int length;
+    int offset;
+    struct LocalVariable *next;
+} LocalVariable;
+
+#define CHILDS_MAX (10)
+static int localVariableCounter;
+static LocalVariable *localVariableHead;
 static Token *previous, *current;
 
-void UpdateToken(void){
+static void UpdateToken(void){
     previous = current;
     current = current->next;
 }
 
-int ConsumeToken(TokenType type){
+static int ConsumeToken(TokenType type){
     if(current->type != type){
         return 0;
     }
@@ -20,7 +29,7 @@ int ConsumeToken(TokenType type){
     return 1;
 }
 
-int ConsumeKeyword(char *keyword){
+static int ConsumeKeyword(char *keyword){
     if(current->type != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
         return 0;
     }
@@ -28,43 +37,66 @@ int ConsumeKeyword(char *keyword){
     return 1;
 }
 
-void ExpectKeyword(char *keyword){
+static void ExpectKeyword(char *keyword){
     if(current->type != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
         SyntaxError(current->string, "\"%s\" expected.", keyword);
     }
     UpdateToken();
 }
 
-Node* NewNode(NodeType type){
+static Node* NewNode(NodeType type){
     Node *new = malloc(sizeof(Node));
     new->type = type;
     new->token = previous;
+    new->number1 = 0;
     new->child1 = NULL;
     new->child2 = NULL;
     new->childs = NULL;
     return new;
 }
 
-Node* BinaryNode(Node *node, Node *child1, Node *child2){
+static Node* BinaryNode(Node *node, Node *child1, Node *child2){
     node->child1 = child1;
     node->child2 = child2;
     return node;
 }
 
-Node* Primary(void){
+static int FindLocalVariable(Token *token){
+    LocalVariable *variable;
+    for(variable = localVariableHead; variable; variable = variable->next){
+        if(!memcmp(variable->string, token->string, token->length) && variable->length == token->length){
+            return variable->offset;
+        }
+    }
+    variable = malloc(sizeof(LocalVariable));
+    variable->string = token->string;
+    variable->length = token->length;
+    variable->offset = localVariableCounter++;
+    variable->next = localVariableHead;
+    localVariableHead = variable;
+    return localVariableHead->offset;
+}
+
+static Node* Primary(void){
     Node *node;
     if(ConsumeToken(NUMBER_TOKEN)){
         node = NewNode(NUMBER_NODE);
     }
-    else {
-        ExpectKeyword("(");
+    else if(ConsumeToken(IDENTIFIER_TOKEN)){
+        node = NewNode(LOCAL_VARIABLE_NODE);
+        node->number1 = FindLocalVariable(node->token);
+    }
+    else if(ConsumeKeyword("(")){
         node = Expression();
         ExpectKeyword(")");
+    }
+    else {
+        SyntaxError(current->string, "Number, variable or (expression) expected.");
     }
     return node;
 }
 
-Node* Unary(void){
+static Node* Unary(void){
     Node *node;
     if(ConsumeKeyword("+")){
         node = Unary();
@@ -79,7 +111,7 @@ Node* Unary(void){
     return node;
 }
 
-Node* Multiplication(void){
+static Node* Multiplication(void){
     Node *node = Unary(), *new;
     while(1){
         if(ConsumeKeyword("*")){
@@ -96,7 +128,7 @@ Node* Multiplication(void){
     }
 }
 
-Node* Addition(void){
+static Node* Addition(void){
     Node *node = Multiplication(), *new;
     while(1){
         if(ConsumeKeyword("+")){
@@ -113,7 +145,7 @@ Node* Addition(void){
     }
 }
 
-Node* Relational(void){
+static Node* Relational(void){
     Node *node = Addition(), *new;
     while(1){
         if(ConsumeKeyword("<")){
@@ -138,7 +170,7 @@ Node* Relational(void){
     }
 }
 
-Node* Equality(void){
+static Node* Equality(void){
     Node *node = Relational(), *new;
     while(1){
         if(ConsumeKeyword("==")){
@@ -155,11 +187,20 @@ Node* Equality(void){
     }
 }
 
-Node* Expression(void){
-    return Equality();
+static Node* Assignment(void){
+    Node *node = Equality(), *new;
+    if(ConsumeKeyword("=")){
+        new = NewNode(ASSIGNMENT_NODE);
+        node = BinaryNode(new, node, Assignment());
+    }
+    return node;
 }
 
-Node* Statement(void){
+static Node* Expression(void){
+    return Assignment();
+}
+
+static Node* Statement(void){
     int i = 0;
     Node *node;
     if(ConsumeKeyword(";")){
@@ -188,5 +229,6 @@ Node* Parser(Token *token){
     current = token;
     node = NewNode(PROGRAM_NODE);
     node->child1 = Statement();
+    node->number1 = localVariableCounter;
     return node;
 }

@@ -8,7 +8,7 @@ char *currentSource;
 
 int main(int argc, char **argv){
     if(argc != 2){
-        RuntimeError("Expected one argument containing source code.");
+        RuntimeError("One argument containing source code expected.");
     }
     currentSource = argv[1];
     Generator(Parser(Lexer(currentSource)));
