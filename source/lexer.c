@@ -23,7 +23,7 @@ static void NewToken(TokenType type, char *string, int length){
 
 Token* Lexer(char *source){
     char *base;
-    static char *keywords[] = {"if", "else", "for", "return"};
+    static char *keywords[] = {"if", "else", "for", "while", "return"};
     int i, j;
     Token head;
     current = &head;

@@ -230,7 +230,7 @@ static Node* Statement(void){
         }
     }
     else if(ConsumeKeyword("for")){
-        node = NewNode(FOR_NODE);
+        node = NewNode(FOR_WHILE_NODE);
         ExpectKeyword("(");
         if(!ConsumeKeyword(";")){
             node->child1 = Expression();
@@ -244,6 +244,13 @@ static Node* Statement(void){
             node->child3 = Expression();
             ExpectKeyword(")");
         }
+        node->child4 = Statement();
+    }
+    else if(ConsumeKeyword("while")){
+        node = NewNode(FOR_WHILE_NODE);
+        ExpectKeyword("(");
+        node->child2 = Expression();
+        ExpectKeyword(")");
         node->child4 = Statement();
     }
     else if(ConsumeKeyword("return")){

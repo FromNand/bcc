@@ -54,7 +54,7 @@ void Generator(Node *node){
             }
             printf(".LEnd%d:\n", id);
             return;
-        case FOR_NODE:
+        case FOR_WHILE_NODE:
             if(node->child1){
                 Generator(node->child1);
             }
