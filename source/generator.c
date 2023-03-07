@@ -54,6 +54,23 @@ void Generator(Node *node){
             }
             printf(".LEnd%d:\n", id);
             return;
+        case FOR_NODE:
+            if(node->child1){
+                Generator(node->child1);
+            }
+            printf(".LBegin%d:\n", id);
+            if(node->child2){
+                Generator(node->child2);
+                printf("    cmp     rax, 0\n");
+                printf("    je      .LEnd%d\n", id);
+            }
+            Generator(node->child4);
+            if(node->child3){
+                Generator(node->child3);
+            }
+            printf("    jmp     .LBegin%d\n", id);
+            printf(".LEnd%d:\n", id);
+            return;
         case RETURN_NODE:
             Generator(node->child1);
             printf("    mov     rsp, rbp\n");

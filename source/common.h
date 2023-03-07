@@ -22,7 +22,7 @@ typedef enum {
     LESS_NODE, LESS_EQUAL_NODE,
     EQUALITY_NODE, INEQUALITY_NODE,
     ASSIGNMENT_NODE,
-    NULL_NODE, BLOCK_NODE, IF_NODE, RETURN_NODE,
+    NULL_NODE, BLOCK_NODE, IF_NODE, FOR_NODE, RETURN_NODE,
     PROGRAM_NODE
 } NodeType;
 
@@ -33,5 +33,6 @@ typedef struct Node {
     struct Node *child1;
     struct Node *child2;
     struct Node *child3;
+    struct Node *child4;
     struct Node **childs;
 } Node;

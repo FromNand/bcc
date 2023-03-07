@@ -52,6 +52,7 @@ static Node* NewNode(NodeType type){
     new->child1 = NULL;
     new->child2 = NULL;
     new->child3 = NULL;
+    new->child4 = NULL;
     new->childs = NULL;
     return new;
 }
@@ -227,6 +228,23 @@ static Node* Statement(void){
         if(ConsumeKeyword("else")){
             node->child3 = Statement();
         }
+    }
+    else if(ConsumeKeyword("for")){
+        node = NewNode(FOR_NODE);
+        ExpectKeyword("(");
+        if(!ConsumeKeyword(";")){
+            node->child1 = Expression();
+            ExpectKeyword(";");
+        }
+        if(!ConsumeKeyword(";")){
+            node->child2 = Expression();
+            ExpectKeyword(";");
+        }
+        if(!ConsumeKeyword(")")){
+            node->child3 = Expression();
+            ExpectKeyword(")");
+        }
+        node->child4 = Statement();
     }
     else if(ConsumeKeyword("return")){
         node = NewNode(RETURN_NODE);
