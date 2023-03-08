@@ -111,6 +111,14 @@ static Node* Unary(void){
         node = NewNode(NEGATION_NODE);
         node->child1 = Unary();
     }
+    else if(ConsumeKeyword("&")){
+        node = NewNode(ADDRESS_NODE);
+        node->child1 = Unary();
+    }
+    else if(ConsumeKeyword("*")){
+        node = NewNode(DEREFERENCE_NODE);
+        node->child1 = Unary();
+    }
     else {
         node = Primary();
     }

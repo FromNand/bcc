@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <common.h>
 
+void Generator(Node *node);
+
 #define LOCAL_VARIABLE_SIZE (8)
 static int localVariableCounter;
 
@@ -8,6 +10,9 @@ static void GenerateLeftValue(Node *node){
     switch(node->kind){
         case LOCAL_VARIABLE_NODE:
             printf("    lea     rax, [rbp-%d]\n", LOCAL_VARIABLE_SIZE * (localVariableCounter - node->number1));
+            break;
+        case DEREFERENCE_NODE:
+            Generator(node->child1);
             break;
         default:
             SyntaxError(node->token->string, "Left value expected.");
@@ -27,6 +32,13 @@ void Generator(Node *node){
         case NEGATION_NODE:
             Generator(node->child1);
             printf("    neg     rax\n");
+            return;
+        case ADDRESS_NODE:
+            GenerateLeftValue(node->child1);
+            return;
+        case DEREFERENCE_NODE:
+            Generator(node->child1);
+            printf("    mov     rax, [rax]\n");
             return;
         case ASSIGNMENT_NODE:
             GenerateLeftValue(node->child1);
