@@ -60,4 +60,6 @@ assert 10 '{ int i=0; while(i<10) i=i+1; return i; }'
 assert 3 '{ {1; {2;} return 3;} }'
 assert 10 '{ int i=0; while(i<10) i=i+1; return i; }'
 assert 55 '{ int i=0; int j=0; while(i<=10) {j=i+j; i=i+1;} return j; }'
+assert 8 '{ int x, y; x=3; y=5; return x+y; }'
+assert 8 '{ int x=3, y=5; return x+y; }'
 rm -f temporary.s temporary
