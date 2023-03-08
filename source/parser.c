@@ -4,7 +4,17 @@
 
 static Node* Expression(void);
 
+typedef enum {
+    INT_TYPE, POINTER_TYPE
+} TypeKind;
+
+typedef struct Type {
+    TypeKind kind;
+    struct Type *point;
+} Type;
+
 typedef struct LocalVariable {
+    Type *type;
     char *string;
     int length;
     int offset;
@@ -14,15 +24,16 @@ typedef struct LocalVariable {
 #define CHILDS_MAX (10)
 static int localVariableCounter;
 static LocalVariable *localVariableHead;
-static Token *previous, *current;
+static Token *former, *previous, *current;
 
 static void UpdateToken(void){
+    former = previous;
     previous = current;
     current = current->next;
 }
 
-static int ConsumeToken(TokenType type){
-    if(current->type != type){
+static int ConsumeToken(TokenKind kind){
+    if(current->kind != kind){
         return 0;
     }
     UpdateToken();
@@ -30,7 +41,7 @@ static int ConsumeToken(TokenType type){
 }
 
 static int ConsumeKeyword(char *keyword){
-    if(current->type != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
+    if(current->kind != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
         return 0;
     }
     UpdateToken();
@@ -38,15 +49,15 @@ static int ConsumeKeyword(char *keyword){
 }
 
 static void ExpectKeyword(char *keyword){
-    if(current->type != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
-        SyntaxError(current->string, "\"%s\" expected.", keyword);
+    if(current->kind != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
+        SyntaxError(current->string, "'%s' expected.", keyword);
     }
     UpdateToken();
 }
 
-static Node* NewNode(NodeType type){
+static Node* NewNode(NodeKind kind){
     Node *new = malloc(sizeof(Node));
-    new->type = type;
+    new->kind = kind;
     new->token = previous;
     new->number1 = 0;
     new->child1 = NULL;
@@ -63,30 +74,23 @@ static Node* BinaryNode(Node *node, Node *child1, Node *child2){
     return node;
 }
 
-static int FindLocalVariable(Token *token){
-    LocalVariable *variable;
-    for(variable = localVariableHead; variable; variable = variable->next){
-        if(!memcmp(variable->string, token->string, token->length) && variable->length == token->length){
-            return variable->offset;
-        }
-    }
-    variable = malloc(sizeof(LocalVariable));
-    variable->string = token->string;
-    variable->length = token->length;
-    variable->offset = localVariableCounter++;
-    variable->next = localVariableHead;
-    localVariableHead = variable;
-    return localVariableHead->offset;
-}
-
 static Node* Primary(void){
+    LocalVariable *variable;
     Node *node;
     if(ConsumeToken(NUMBER_TOKEN)){
         node = NewNode(NUMBER_NODE);
     }
     else if(ConsumeToken(IDENTIFIER_TOKEN)){
         node = NewNode(LOCAL_VARIABLE_NODE);
-        node->number1 = FindLocalVariable(node->token);
+        for(variable = localVariableHead; variable; variable = variable->next){
+            if(!memcmp(variable->string, node->token->string, node->token->length) && variable->length == node->token->length){
+                node->number1 = variable->offset;
+                break;
+            }
+        }
+        if(variable == NULL){
+            SyntaxError(node->token->string, "'%.*s' undefined.", node->token->length, node->token->string);
+        }
     }
     else if(ConsumeKeyword("(")){
         node = Expression();
@@ -204,7 +208,9 @@ static Node* Expression(void){
 
 static Node* Statement(void){
     int i = 0;
-    Node *node;
+    Type *head, *new;
+    LocalVariable *variable;
+    Node *node, *node2;
     if(ConsumeKeyword(";")){
         node = NewNode(NULL_NODE);
     }
@@ -218,6 +224,45 @@ static Node* Statement(void){
             node->childs[i++] = Statement();
         }
         node->childs[i] = NULL;
+    }
+    else if(ConsumeKeyword("int")){
+        head = malloc(sizeof(Type));
+        if(!memcmp(previous->string, "int", 3) && previous->length == 3){
+            head->kind = INT_TYPE;
+        }
+        head->point = NULL;
+        while(ConsumeKeyword("*")){
+            new = malloc(sizeof(Type));
+            new->kind = POINTER_TYPE;
+            new->point = head;
+            head = new;
+        }
+        if(!ConsumeToken(IDENTIFIER_TOKEN)){
+            SyntaxError(current->string, "Invalid variable name.");
+        }
+        for(variable = localVariableHead; variable; variable = variable->next){
+            if(!memcmp(variable->string, previous->string, previous->length) && variable->length == previous->length){
+                SyntaxError(previous->string, "'%.*s' redefined.", previous->length, previous->string);
+            }
+        }
+        variable = malloc(sizeof(LocalVariable));
+        variable->type = head;
+        variable->string = previous->string;
+        variable->length = previous->length;
+        variable->offset = localVariableCounter++;
+        variable->next = localVariableHead;
+        localVariableHead = variable;
+        if(ConsumeKeyword("=")){
+            node = NewNode(ASSIGNMENT_NODE);
+            node2 = NewNode(LOCAL_VARIABLE_NODE);
+            node2->token = former;
+            node2->number1 = localVariableHead->offset;
+            BinaryNode(node, node2, Expression());
+        }
+        else {
+            node = NewNode(NULL_NODE);
+        }
+        ExpectKeyword(";");
     }
     else if(ConsumeKeyword("if")){
         node = NewNode(IF_NODE);

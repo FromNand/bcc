@@ -5,7 +5,7 @@
 static int localVariableCounter;
 
 static void GenerateLeftValue(Node *node){
-    switch(node->type){
+    switch(node->kind){
         case LOCAL_VARIABLE_NODE:
             printf("    lea     rax, [rbp-%d]\n", LOCAL_VARIABLE_SIZE * (localVariableCounter - node->number1));
             break;
@@ -17,7 +17,7 @@ static void GenerateLeftValue(Node *node){
 void Generator(Node *node){
     static int counter;
     int i = 0, id = counter++;
-    switch(node->type){
+    switch(node->kind){
         case NUMBER_NODE:
             printf("    mov     rax, %d\n", node->token->value);
             return;
@@ -96,7 +96,7 @@ void Generator(Node *node){
             Generator(node->child1);
             printf("    pop     rdi\n");
     }
-    switch(node->type){
+    switch(node->kind){
         case MULTIPLICATION_NODE:
             printf("    imul    rax, rdi\n");
             return;
@@ -113,7 +113,7 @@ void Generator(Node *node){
         default:
             printf("    cmp     rax, rdi\n");
     }
-    switch(node->type){
+    switch(node->kind){
         case LESS_NODE:
             printf("    setl    al\n");
             break;

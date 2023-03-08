@@ -4,10 +4,10 @@ void SyntaxError(char *location, char *format, ...);
 
 typedef enum {
     KEYWORD_TOKEN, NUMBER_TOKEN, IDENTIFIER_TOKEN, TAIL_TOKEN
-} TokenType;
+} TokenKind;
 
 typedef struct Token {
-    TokenType type;
+    TokenKind kind;
     char *string;
     int length;
     int value;
@@ -24,10 +24,10 @@ typedef enum {
     ASSIGNMENT_NODE,
     NULL_NODE, BLOCK_NODE, IF_NODE, FOR_WHILE_NODE, RETURN_NODE,
     PROGRAM_NODE
-} NodeType;
+} NodeKind;
 
 typedef struct Node {
-    NodeType type;
+    NodeKind kind;
     Token *token;
     int number1;
     struct Node *child1;

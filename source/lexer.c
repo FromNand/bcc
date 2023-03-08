@@ -12,9 +12,9 @@ static int IsIdentifierCharacter(char character){
     return ('0' <= character && character <= '9') || ('A' <= character && character <= 'Z') || ('a' <= character && character <= 'z') || character == '_';
 }
 
-static void NewToken(TokenType type, char *string, int length){
+static void NewToken(TokenKind kind, char *string, int length){
     Token *new = malloc(sizeof(Token));
-    new->type = type;
+    new->kind = kind;
     new->string = string;
     new->length = length;
     new->value = 0;
@@ -23,7 +23,7 @@ static void NewToken(TokenType type, char *string, int length){
 
 Token* Lexer(char *source){
     char *base;
-    static char *keywords[] = {"if", "else", "for", "while", "return"};
+    static char *keywords[] = {"int", "if", "else", "for", "while", "return"};
     int i, j;
     Token head;
     current = &head;
