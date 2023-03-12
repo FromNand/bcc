@@ -2,19 +2,9 @@
 #include <string.h>
 #include <common.h>
 
-static Node* Expression(void);
-
-typedef enum {
-    INT_TYPE, POINTER_TYPE
-} TypeKind;
-
-typedef struct Type {
-    TypeKind kind;
-    struct Type *point;
-} Type;
+Node* Expression(void);
 
 typedef struct LocalVariable {
-    Type *type;
     char *string;
     int length;
     int offset;
@@ -24,41 +14,41 @@ typedef struct LocalVariable {
 #define CHILDS_MAX (10)
 static int localVariableCounter;
 static LocalVariable *localVariableHead;
-static Token *former, *previous, *current;
+static Token *previous, *current, *next;
 
-static void UpdateToken(void){
-    former = previous;
+void UpdateToken(void){
     previous = current;
-    current = current->next;
+    current = next;
+    next = next->next;
 }
 
-static int ConsumeToken(TokenKind kind){
-    if(current->kind != kind){
+int ConsumeToken(TokenKind kind){
+    if(next->kind != kind){
         return 0;
     }
     UpdateToken();
     return 1;
 }
 
-static int ConsumeKeyword(char *keyword){
-    if(current->kind != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
+int ConsumeKeyword(char *keyword){
+    if(next->kind != KEYWORD_TOKEN || memcmp(next->string, keyword, strlen(keyword)) || next->length != strlen(keyword)){
         return 0;
     }
     UpdateToken();
     return 1;
 }
 
-static void ExpectKeyword(char *keyword){
-    if(current->kind != KEYWORD_TOKEN || memcmp(current->string, keyword, strlen(keyword)) || current->length != strlen(keyword)){
-        SyntaxError(current->string, "'%s' expected.", keyword);
+void RequireKeyword(char *keyword){
+    if(next->kind != KEYWORD_TOKEN || memcmp(next->string, keyword, strlen(keyword)) || next->length != strlen(keyword)){
+        SyntaxError(next->string, "'%s' is required.", keyword);
     }
     UpdateToken();
 }
 
-static Node* NewNode(NodeKind kind){
+Node* NewNode(NodeKind kind){
     Node *new = malloc(sizeof(Node));
     new->kind = kind;
-    new->token = previous;
+    new->token = current;
     new->number1 = 0;
     new->child1 = NULL;
     new->child2 = NULL;
@@ -68,47 +58,47 @@ static Node* NewNode(NodeKind kind){
     return new;
 }
 
-static Node* BinaryNode(Node *node, Node *child1, Node *child2){
+Node* MakeBinaryTree(Node *node, Node *child1, Node *child2){
     node->child1 = child1;
     node->child2 = child2;
     return node;
 }
 
-static Node* Primary(void){
-    LocalVariable *variable;
+Node* Primary(void){
+    LocalVariable *localVariable;
     Node *node;
     if(ConsumeToken(NUMBER_TOKEN)){
         node = NewNode(NUMBER_NODE);
     }
     else if(ConsumeToken(IDENTIFIER_TOKEN)){
         node = NewNode(LOCAL_VARIABLE_NODE);
-        for(variable = localVariableHead; variable; variable = variable->next){
-            if(!memcmp(variable->string, node->token->string, node->token->length) && variable->length == node->token->length){
-                node->number1 = variable->offset;
+        for(localVariable = localVariableHead; localVariable; localVariable = localVariable->next){
+            if(!memcmp(localVariable->string, node->token->string, node->token->length) && localVariable->length == node->token->length){
+                node->number1 = localVariable->offset;
                 break;
             }
         }
-        if(variable == NULL){
-            SyntaxError(node->token->string, "'%.*s' undefined.", node->token->length, node->token->string);
+        if(!localVariable){
+            SyntaxError(node->token->string, "'%.*s' is undefined.", node->token->length, node->token->string);
         }
     }
     else if(ConsumeKeyword("(")){
         node = Expression();
-        ExpectKeyword(")");
+        RequireKeyword(")");
     }
     else {
-        SyntaxError(current->string, "Number, variable or (expression) expected.");
+        SyntaxError(next->string, "Number, variable, or (expression) is required.");
     }
     return node;
 }
 
-static Node* Unary(void){
+Node* Unary(void){
     Node *node;
     if(ConsumeKeyword("+")){
         node = Unary();
     }
     else if(ConsumeKeyword("-")){
-        node = NewNode(NEGATION_NODE);
+        node = NewNode(MINUS_NODE);
         node->child1 = Unary();
     }
     else if(ConsumeKeyword("&")){
@@ -125,16 +115,16 @@ static Node* Unary(void){
     return node;
 }
 
-static Node* Multiplication(void){
+Node* Multiplication(void){
     Node *node = Unary(), *new;
     while(1){
         if(ConsumeKeyword("*")){
             new = NewNode(MULTIPLICATION_NODE);
-            node = BinaryNode(new, node, Unary());
+            node = MakeBinaryTree(new, node, Unary());
         }
         else if(ConsumeKeyword("/")){
             new = NewNode(DIVISION_NODE);
-            node = BinaryNode(new, node, Unary());
+            node = MakeBinaryTree(new, node, Unary());
         }
         else {
             return node;
@@ -142,16 +132,16 @@ static Node* Multiplication(void){
     }
 }
 
-static Node* Addition(void){
+Node* Addition(void){
     Node *node = Multiplication(), *new;
     while(1){
         if(ConsumeKeyword("+")){
             new = NewNode(ADDITION_NODE);
-            node = BinaryNode(new, node, Multiplication());
+            node = MakeBinaryTree(new, node, Multiplication());
         }
         else if(ConsumeKeyword("-")){
             new = NewNode(SUBTRACTION_NODE);
-            node = BinaryNode(new, node, Multiplication());
+            node = MakeBinaryTree(new, node, Multiplication());
         }
         else {
             return node;
@@ -159,24 +149,24 @@ static Node* Addition(void){
     }
 }
 
-static Node* Relational(void){
+Node* Relational(void){
     Node *node = Addition(), *new;
     while(1){
         if(ConsumeKeyword("<")){
             new = NewNode(LESS_NODE);
-            node = BinaryNode(new, node, Addition());
+            node = MakeBinaryTree(new, node, Addition());
         }
         else if(ConsumeKeyword("<=")){
             new = NewNode(LESS_EQUAL_NODE);
-            node = BinaryNode(new, node, Addition());
+            node = MakeBinaryTree(new, node, Addition());
         }
         else if(ConsumeKeyword(">")){
             new = NewNode(LESS_NODE);
-            node = BinaryNode(new, Addition(), node);
+            node = MakeBinaryTree(new, Addition(), node);
         }
         else if(ConsumeKeyword(">=")){
             new = NewNode(LESS_EQUAL_NODE);
-            node = BinaryNode(new, Addition(), node);
+            node = MakeBinaryTree(new, Addition(), node);
         }
         else {
             return node;
@@ -184,16 +174,16 @@ static Node* Relational(void){
     }
 }
 
-static Node* Equality(void){
+Node* Equality(void){
     Node *node = Relational(), *new;
     while(1){
         if(ConsumeKeyword("==")){
             new = NewNode(EQUALITY_NODE);
-            node = BinaryNode(new, node, Relational());
+            node = MakeBinaryTree(new, node, Relational());
         }
         else if(ConsumeKeyword("!=")){
             new = NewNode(INEQUALITY_NODE);
-            node = BinaryNode(new, node, Relational());
+            node = MakeBinaryTree(new, node, Relational());
         }
         else {
             return node;
@@ -201,94 +191,77 @@ static Node* Equality(void){
     }
 }
 
-static Node* Assignment(void){
+Node* Assignment(void){
     Node *node = Equality(), *new;
     if(ConsumeKeyword("=")){
         new = NewNode(ASSIGNMENT_NODE);
-        node = BinaryNode(new, node, Assignment());
+        node = MakeBinaryTree(new, node, Assignment());
     }
     return node;
 }
 
-static Node* Expression(void){
+Node* Expression(void){
     return Assignment();
 }
 
-static Node* Statement(void){
-    int i = 0;
-    TypeKind kind;
-    Type *head, *new;
-    LocalVariable *variable;
+Node* Statement(void){
+    LocalVariable *localVariable;
     Node *node, *node2;
     if(ConsumeKeyword(";")){
-        node = NewNode(NULL_NODE);
+        node = NULL;
     }
     else if(ConsumeKeyword("{")){
         node = NewNode(BLOCK_NODE);
         node->childs = malloc(sizeof(Node*) * CHILDS_MAX);
         while(!ConsumeKeyword("}")){
-            if(i >= CHILDS_MAX - 1){
-                SyntaxError(current->string, "At most %d statements are allowed in block statement.", CHILDS_MAX - 1);
+            if(node->number1 >= CHILDS_MAX - 1){
+                SyntaxError(next->string, "Up to %d statements can be used in a block statement.", CHILDS_MAX - 1);
             }
-            node->childs[i++] = Statement();
+            node->childs[node->number1++] = Statement();
         }
-        node->childs[i] = NULL;
     }
     else if(ConsumeKeyword("int")){
         node = NewNode(BLOCK_NODE);
         node->childs = malloc(sizeof(Node*) * CHILDS_MAX);
-        if(!memcmp(previous->string, "int", 3) && previous->length == 3){
-            kind = INT_TYPE;
-        }
         do {
-            if(i >= CHILDS_MAX - 1){
-                SyntaxError(current->string, "At most %d variable definitions are allowed at once.", CHILDS_MAX - 1);
+            if(node->number1){
+                RequireKeyword(",");
             }
-            if(i > 0){
-                ExpectKeyword(",");
-            }
-            head = malloc(sizeof(Type));
-            head->kind = kind;
-            head->point = NULL;
-            while(ConsumeKeyword("*")){
-                new = malloc(sizeof(Type));
-                new->kind = POINTER_TYPE;
-                new->point = head;
-                head = new;
+            while(ConsumeKeyword("*"));
+            if(node->number1 >= CHILDS_MAX - 1){
+                SyntaxError(next->string, "Up to %d variables can be initialized at one time.", CHILDS_MAX - 1);
             }
             if(!ConsumeToken(IDENTIFIER_TOKEN)){
-                SyntaxError(current->string, "Invalid variable name.");
+                SyntaxError(next->string, "'%.*s' cannot be used in a variable name.", next->length, next->string);
             }
-            for(variable = localVariableHead; variable; variable = variable->next){
-                if(!memcmp(variable->string, previous->string, previous->length) && variable->length == previous->length){
-                    SyntaxError(previous->string, "'%.*s' redefined.", previous->length, previous->string);
+            for(localVariable = localVariableHead; localVariable; localVariable = localVariable->next){
+                if(!memcmp(localVariable->string, current->string, current->length) && localVariable->length == current->length){
+                    SyntaxError(current->string, "'%.*s' is redefined.", current->length, current->string);
                 }
             }
-            variable = malloc(sizeof(LocalVariable));
-            variable->type = head;
-            variable->string = previous->string;
-            variable->length = previous->length;
-            variable->offset = localVariableCounter++;
-            variable->next = localVariableHead;
-            localVariableHead = variable;
+            localVariable = malloc(sizeof(LocalVariable));
+            localVariable->string = current->string;
+            localVariable->length = current->length;
+            localVariable->offset = localVariableCounter++;
+            localVariable->next = localVariableHead;
+            localVariableHead = localVariable;
             if(ConsumeKeyword("=")){
-                node->childs[i] = NewNode(ASSIGNMENT_NODE);
+                node->childs[node->number1] = NewNode(ASSIGNMENT_NODE);
                 node2 = NewNode(LOCAL_VARIABLE_NODE);
-                node2->token = former;
+                node2->token = previous;
                 node2->number1 = localVariableHead->offset;
-                BinaryNode(node->childs[i++], node2, Expression());
+                MakeBinaryTree(node->childs[node->number1++], node2, Expression());
             }
             else {
-                node->childs[i++] = NewNode(NULL_NODE);
+                node->childs[node->number1++] = NULL;
             }
         } while(!ConsumeKeyword(";"));
-        node->childs[i] = NULL;
     }
     else if(ConsumeKeyword("if")){
         node = NewNode(IF_NODE);
-        ExpectKeyword("(");
+        RequireKeyword("(");
         node->child1 = Expression();
-        ExpectKeyword(")");
+        RequireKeyword(")");
         node->child2 = Statement();
         if(ConsumeKeyword("else")){
             node->child3 = Statement();
@@ -296,44 +269,45 @@ static Node* Statement(void){
     }
     else if(ConsumeKeyword("for")){
         node = NewNode(FOR_WHILE_NODE);
-        ExpectKeyword("(");
+        RequireKeyword("(");
         if(!ConsumeKeyword(";")){
             node->child1 = Expression();
-            ExpectKeyword(";");
+            RequireKeyword(";");
         }
         if(!ConsumeKeyword(";")){
             node->child2 = Expression();
-            ExpectKeyword(";");
+            RequireKeyword(";");
         }
         if(!ConsumeKeyword(")")){
             node->child3 = Expression();
-            ExpectKeyword(")");
+            RequireKeyword(")");
         }
         node->child4 = Statement();
     }
     else if(ConsumeKeyword("while")){
         node = NewNode(FOR_WHILE_NODE);
-        ExpectKeyword("(");
+        RequireKeyword("(");
         node->child2 = Expression();
-        ExpectKeyword(")");
+        RequireKeyword(")");
         node->child4 = Statement();
     }
     else if(ConsumeKeyword("return")){
         node = NewNode(RETURN_NODE);
         node->child1 = Expression();
-        ExpectKeyword(";");
+        RequireKeyword(";");
     }
     else {
         node = Expression();
-        ExpectKeyword(";");
+        RequireKeyword(";");
     }
     return node;
 }
 
 Node* Parser(Token *token){
     Node *node;
-    current = token;
+    next = token;
     node = NewNode(PROGRAM_NODE);
+    node->token = next;
     node->child1 = Statement();
     node->number1 = localVariableCounter;
     return node;

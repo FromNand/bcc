@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-extern char *currentSource;
+extern char *input;
 
 void RuntimeErrorInternal(char *file, int line, char *format, ...){
     va_list arguments;
@@ -13,10 +13,10 @@ void RuntimeErrorInternal(char *file, int line, char *format, ...){
     exit(EXIT_FAILURE);
 }
 
-void SyntaxError(char *location, char *format, ...){
+void SyntaxError(char *position, char *format, ...){
     va_list arguments;
     va_start(arguments, format);
-    fprintf(stderr, "\n%s\n%*s^ ", currentSource, (int)(location - currentSource), "");
+    fprintf(stderr, "\n%s\n%*s^ ", input, (int)(position - input), "");
     vfprintf(stderr, format, arguments);
     fprintf(stderr, "\n\n");
     exit(EXIT_FAILURE);

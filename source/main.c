@@ -1,16 +1,16 @@
 #include <common.h>
 
-Token* Lexer(char *source);
+Token* Lexer(char *input);
 Node* Parser(Token *token);
 void Generator(Node *node);
 
-char *currentSource;
+char *input;
 
 int main(int argc, char **argv){
     if(argc != 2){
-        RuntimeError("One argument containing source code expected.");
+        RuntimeError("One argument containing the source code is required.");
     }
-    currentSource = argv[1];
-    Generator(Parser(Lexer(currentSource)));
+    input = argv[1];
+    Generator(Parser(Lexer(input)));
     return 0;
 }

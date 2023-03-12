@@ -1,6 +1,6 @@
-# What is this?
+# What is bcc?
 
-This is a hobby c compiler with the following goals.
+A hobby C compiler with the following goals.
 
 1. self hosting
 2. gcc compatibility

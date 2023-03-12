@@ -3,9 +3,9 @@
 assert(){
     ./bcc "$2" > temporary.s && gcc temporary.s -o temporary && ./temporary; actual="$?"
     if [ "$actual" = "$1" ]; then
-        echo -en "| O | Actual($actual) Expected($1) | \"$2\" |\n"
+        echo -en "| O | Actual($actual) Required($1) | \"$2\" |\n"
     else
-        echo -en "| X | Actual($actual) Expected($1) | \"$2\" |\n"
+        echo -en "| X | Actual($actual) Required($1) | \"$2\" |\n"
     fi
 }
 

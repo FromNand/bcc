@@ -2,26 +2,28 @@
 #include <common.h>
 
 void Generator(Node *node);
-
 #define LOCAL_VARIABLE_SIZE (8)
 static int localVariableCounter;
 
-static void GenerateLeftValue(Node *node){
+void GenerateLeftValue(Node *node){
     switch(node->kind){
         case LOCAL_VARIABLE_NODE:
             printf("    lea     rax, [rbp-%d]\n", LOCAL_VARIABLE_SIZE * (localVariableCounter - node->number1));
-            break;
+            return;
         case DEREFERENCE_NODE:
             Generator(node->child1);
-            break;
+            return;
         default:
-            SyntaxError(node->token->string, "Left value expected.");
+            SyntaxError(node->token->string, "Left value is required.");
     }
 }
 
 void Generator(Node *node){
     static int counter;
-    int i = 0, id = counter++;
+    int i = counter++;
+    if(!node){
+        return;
+    }
     switch(node->kind){
         case NUMBER_NODE:
             printf("    mov     rax, %d\n", node->token->value);
@@ -29,7 +31,7 @@ void Generator(Node *node){
         case LOCAL_VARIABLE_NODE:
             printf("    mov     rax, [rbp-%d]\n", LOCAL_VARIABLE_SIZE * (localVariableCounter - node->number1));
             return;
-        case NEGATION_NODE:
+        case MINUS_NODE:
             Generator(node->child1);
             printf("    neg     rax\n");
             return;
@@ -47,41 +49,33 @@ void Generator(Node *node){
             printf("    pop     rdi\n");
             printf("    mov     [rdi], rax\n");
             return;
-        case NULL_NODE:
-            return;
         case BLOCK_NODE:
-            while(node->childs[i]){
-                Generator(node->childs[i++]);
+            for(i = 0; i < node->number1; i++){
+                Generator(node->childs[i]);
             }
             return;
         case IF_NODE:
             Generator(node->child1);
             printf("    cmp     rax, 0\n");
-            printf("    je      .LElse%d\n", id);
+            printf("    je      .LElse%d\n", i);
             Generator(node->child2);
-            printf("    jmp     .LEnd%d\n", id);
-            printf(".LElse%d:\n", id);
-            if(node->child3){
-                Generator(node->child3);
-            }
-            printf(".LEnd%d:\n", id);
+            printf("    jmp     .LEnd%d\n", i);
+            printf(".LElse%d:\n", i);
+            Generator(node->child3);
+            printf(".LEnd%d:\n", i);
             return;
         case FOR_WHILE_NODE:
-            if(node->child1){
-                Generator(node->child1);
-            }
-            printf(".LBegin%d:\n", id);
+            Generator(node->child1);
+            printf(".LBegin%d:\n", i);
             if(node->child2){
                 Generator(node->child2);
                 printf("    cmp     rax, 0\n");
-                printf("    je      .LEnd%d\n", id);
+                printf("    je      .LEnd%d\n", i);
             }
             Generator(node->child4);
-            if(node->child3){
-                Generator(node->child3);
-            }
-            printf("    jmp     .LBegin%d\n", id);
-            printf(".LEnd%d:\n", id);
+            Generator(node->child3);
+            printf("    jmp     .LBegin%d\n", i);
+            printf(".LEnd%d:\n", i);
             return;
         case RETURN_NODE:
             Generator(node->child1);
